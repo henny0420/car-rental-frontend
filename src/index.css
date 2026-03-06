@@ -1,0 +1,80 @@
+@import "tailwindcss";
+@import "tailwindcss";
+
+@theme {
+  /* ===============================
+     Primary – Speed Red
+  =============================== */
+  --color-primary-50:  #fef2f2;
+  --color-primary-100: #fee2e2;
+  --color-primary-200: #fecaca;
+  --color-primary-300: #fca5a5;
+  --color-primary-400: #f87171;
+  --color-primary-500: #ef4444;
+  --color-primary-600: #dc2626;
+  --color-primary-700: #b91c1c;
+  --color-primary-800: #991b1b;
+  --color-primary-900: #7f1d1d;
+  --color-primary-950: #450a0a;
+
+  /* ===============================
+     Secondary – Turbo Orange
+  =============================== */
+  --color-secondary-50:  #fff7ed;
+  --color-secondary-100: #ffedd5;
+  --color-secondary-200: #fed7aa;
+  --color-secondary-300: #fdba74;
+  --color-secondary-400: #fb923c;
+  --color-secondary-500: #f97316;
+  --color-secondary-600: #ea580c;
+  --color-secondary-700: #c2410c;
+  --color-secondary-800: #9a3412;
+  --color-secondary-900: #7c2d12;
+  --color-secondary-950: #431407;
+
+  /* ===============================
+     Neutrals – Tarmac Grey
+  =============================== */
+  --color-tarmac-50:  #f8fafc;
+  --color-tarmac-100: #f1f5f9;
+  --color-tarmac-200: #e2e8f0;
+  --color-tarmac-300: #cbd5e1;
+  --color-tarmac-400: #94a3b8;
+  --color-tarmac-500: #64748b;
+  --color-tarmac-600: #475569;
+  --color-tarmac-700: #334155;
+  --color-tarmac-800: #1e293b;
+  --color-tarmac-900: #0f172a;
+  --color-tarmac-950: #020617;
+
+  /* ===============================
+     Semantic Colors
+  =============================== */
+  --color-success: #16a34a;
+  --color-error:   #dc2626;
+  --color-warning: #ea580c;
+
+  /* ===============================
+     Fonts
+  =============================== */
+  --font-sans: Inter, ui-sans-serif, system-ui;
+  --font-display: Montserrat, Inter, sans-serif;
+}
+
+.container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 1440px;
+}
+
+@media (min-width: 640px) {
+  .container {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-inline: 2rem;
+  }
+}
