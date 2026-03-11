@@ -5,6 +5,7 @@ import { BrandsSlider } from "./brands";
 import { PremiumCars } from "./premiumCars";
 import WhyChooseUs from "./whyChooseUs.jsx";
 import CustomerExperience from "./customerExperience/index.jsx";
+import Newsletter from "./newzLetter/index.jsx";
 
 export default function Home() {
     return (
@@ -15,6 +16,7 @@ export default function Home() {
             <PremiumCars />
             <WhyChooseUs />
             <CustomerExperience />
+            <Newsletter />
         </div>
     );
 }

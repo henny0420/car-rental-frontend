@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './component/layout/header';
 import Signin from './pages/auth/signin';
 import Signup from './pages/auth/signup';
@@ -11,8 +11,16 @@ import BrandCarsPage from './pages/user/brandCars';
 import AllBrandsPage from './pages/user/allBrands';
 import PremiumCarsPage from './pages/user/premiumCarsPage';
 import SingleCarPage from './pages/user/singleCar';
+import ExploreCarsPage from './pages/user/exploreCarPage';
+import Footer from './component/layout/footer';
 
 function App() {
+  const location = useLocation();
+  const hideFooterRoutes = ['/signin', '/signup', '/admin', '/owner'];
+
+  // Also check if the route starts with admin or owner for nested routes
+  const shouldHideFooter = hideFooterRoutes.some(route => location.pathname.startsWith(route));
+
   return (
     <div className="min-h-screen bg-tarmac-50 font-sans text-tarmac-900">
       <Header />
@@ -24,6 +32,7 @@ function App() {
         <Route path="/brand/:brandId" element={<BrandCarsPage />} />
         <Route path="/premium-cars" element={<PremiumCarsPage />} />
         <Route path="/car/:id" element={<SingleCarPage />} />
+        <Route path="/explore" element={<ExploreCarsPage />} />
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLayout><AddBrandsPage /></AdminLayout>} />
@@ -34,6 +43,7 @@ function App() {
         <Route path="/owner/cars/add" element={<OwnerLayout><AddCar /></OwnerLayout>} />
 
       </Routes>
+      {!shouldHideFooter && <Footer />}
     </div>
   )
 }
