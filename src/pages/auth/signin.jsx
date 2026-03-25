@@ -41,8 +41,17 @@ export default function Signin() {
                 password
             });
             console.log("Success:", response.data);
-            toast.success('Login successful!');
-            navigate('/'); // Redirect to home
+            if (response.data.token) {
+                signIn({
+                    token: response.data.token,
+                    role: response.data.role,
+                    name: response.data.fullname || response.data.name || email.split('@')[0]
+                });
+                toast.success('Login successful!');
+                navigate('/');
+            } else {
+                toast.error(response.data.message || 'Login failed');
+            }
         } catch (error) {
             console.error("Login Failed:", error);
             if (error.response) {

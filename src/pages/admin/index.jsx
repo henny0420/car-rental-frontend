@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import axiosInstance from '../../api/axiosInstance';
 import {
     LayoutDashboard,
     FileCheck,
@@ -18,23 +19,70 @@ import {
     X,
     ShieldAlert
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function AdminLayout({ children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [counts, setCounts] = useState({ unreadCount: 0, pendingCarsCount: 0 });
+    const [notifications, setNotifications] = useState([]);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const location = useLocation();
+
+    const fetchCounts = async () => {
+        try {
+            const res = await axiosInstance.get('/notification/admin/unread-count');
+            if (res.data?.success) {
+                setCounts({
+                    unreadCount: res.data.unreadCount,
+                    pendingCarsCount: res.data.pendingCarsCount
+                });
+            }
+        } catch (err) {
+            console.error("Failed to fetch notification counts", err);
+        }
+    };
+
+    const fetchNotifications = async () => {
+        try {
+            const res = await axiosInstance.get('/notification/admin/all');
+            if (res.data?.success) {
+                setNotifications(res.data.data);
+            }
+        } catch (err) {
+            console.error("Failed to fetch notifications", err);
+        }
+    };
+
+    React.useEffect(() => {
+        fetchCounts();
+        fetchNotifications();
+        // Refresh counts every 30 seconds
+        const interval = setInterval(fetchCounts, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' },
-        { name: 'Approvals', icon: FileCheck, href: '/admin/approvals', badge: 12, alert: true }, // Alert for pending items
-        { name: 'Owners List', icon: UserCog, href: '/admin/owners' },
-        { name: 'Users (All)', icon: Users, href: '/admin/users' },
-        { name: 'All Cars', icon: Car, href: '/admin/cars' },
-        { name: 'Brands', icon: Tags, href: '/admin/brands', active: true }, // Default active for preview
+        { 
+            name: 'Approvals', 
+            icon: FileCheck, 
+            href: '/admin/approvals', 
+            badge: counts.pendingCarsCount > 0 ? counts.pendingCarsCount : null, 
+            alert: counts.pendingCarsCount > 0,
+            active: location.pathname === '/admin/approvals'
+        },
+        { name: 'Owners List', icon: UserCog, href: '/admin/owners', active: location.pathname === '/admin/owners' },
+        { name: 'Users (All)', icon: Users, href: '/admin/users', active: location.pathname === '/admin/users' },
+        { name: 'All Cars', icon: Car, href: '/admin/cars', active: location.pathname === '/admin/cars' },
+        { name: 'Brands', icon: Tags, href: '/admin/brands', active: location.pathname === '/admin/brands' || location.pathname === '/admin' }, 
     ];
+
+    // Mark Dashboard active if exactly on dashboard or no subpath
+    if (location.pathname === '/admin/dashboard') navItems[0].active = true;
 
     return (
         <div className="flex h-screen bg-tarmac-50 text-tarmac-900 font-sans overflow-hidden relative selection:bg-primary-100 selection:text-primary-900">
@@ -121,7 +169,7 @@ export default function AdminLayout({ children }) {
                     {navItems.map((item) => (
                         <Link
                             key={item.name}
-                            href={item.href}
+                            to={item.href}
                             className={`
                 group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 block mb-1 relative
                 ${item.active
@@ -160,7 +208,7 @@ export default function AdminLayout({ children }) {
                 {/* Bottom Actions */}
                 <div className="p-3  border-tarmac-100 space-y-1 bg-primary-600">
                     <Link
-                        href="/"
+                        to="/"
                         className={`
                 group flex items-center gap-3 px-3 py-3 rounded-xl text-white hover:bg-secondary-50 hover:text-secondary-700 transition-all block
                 ${!isSidebarOpen && 'justify-center'}
@@ -218,11 +266,59 @@ export default function AdminLayout({ children }) {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 ml-4">
-                        <button className="relative p-2.5 text-tarmac-500 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors">
+                    <div className="flex items-center gap-4 ml-4 relative">
+                        <button 
+                            onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                            className="relative p-2.5 text-tarmac-500 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors"
+                        >
                             <Bell size={20} />
-                            <span className="absolute top-2.5 right-3 w-2 h-2 bg-primary-600 rounded-full border-2 border-white animate-pulse"></span>
+                            {counts.unreadCount > 0 && (
+                                <span className="absolute top-2.5 right-3 w-5 h-5 bg-primary-600 text-white text-[10px] font-bold rounded-full border-2 border-white flex items-center justify-center animate-pulse">
+                                    {counts.unreadCount}
+                                </span>
+                            )}
                         </button>
+
+                        {/* Notification Dropdown */}
+                        {isNotificationsOpen && (
+                            <div className="absolute right-0 top-14 w-80 bg-white border border-tarmac-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                                <div className="p-4 border-b border-tarmac-100 flex items-center justify-between">
+                                    <h3 className="font-bold text-sm">Notifications</h3>
+                                    <button 
+                                        onClick={async () => {
+                                            await axiosInstance.put('/notification/admin/mark-all-read');
+                                            fetchCounts();
+                                            setIsNotificationsOpen(false);
+                                        }}
+                                        className="text-[10px] font-bold text-primary-600 hover:underline"
+                                    >
+                                        Mark all as read
+                                    </button>
+                                </div>
+                                <div className="max-h-96 overflow-y-auto">
+                                    {notifications.length === 0 ? (
+                                        <div className="p-8 text-center text-xs text-tarmac-400 font-medium">
+                                            No notifications found
+                                        </div>
+                                    ) : (
+                                        notifications.map(notif => (
+                                            <div key={notif._id} className={`p-4 border-b border-tarmac-50 last:border-none hover:bg-tarmac-50 transition-colors ${!notif.isRead ? 'bg-primary-50/30' : ''}`}>
+                                                <p className="text-xs font-bold text-tarmac-900 mb-0.5">{notif.title}</p>
+                                                <p className="text-[11px] text-tarmac-500 line-clamp-2 mb-1">{notif.message}</p>
+                                                <p className="text-[9px] text-tarmac-400 font-medium italic">
+                                                    {new Date(notif.createdAt).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                                <div className="p-3 bg-tarmac-50 border-t border-tarmac-100 text-center">
+                                    <Link to="/admin/approvals" className="text-[11px] font-bold text-tarmac-600 hover:text-primary-600" onClick={() => setIsNotificationsOpen(false)}>
+                                        View all approvals
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
                         <div className="w-px h-8 bg-tarmac-200 hidden md:block"></div>
                         <div className="hidden md:flex items-center gap-3">
                             <span className="text-xs font-bold text-tarmac-500">v1.2.0</span>

@@ -2,9 +2,10 @@ import { useLocation, Link } from 'react-router-dom';
 import { useSession } from '../../context/AuthContext';
 import {
     Car, Menu, X, LogOut, User, MapPin, Phone, Mail,
-    Facebook, Twitter, Instagram, Linkedin, Globe
+    Facebook, Twitter, Instagram, Linkedin, Globe, Bell
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axiosInstance from '../../api/axiosInstance';
 
 // // --- Mocks for Preview Environment (DELETE THESE IN YOUR REAL PROJECT) ---
 // const Link = ({ href, children, className }) => <a href={href} className={className}>{children}</a>;
@@ -18,6 +19,31 @@ export default function Header() {
     const { data: session, signOut } = useSession();
     const { pathname } = useLocation();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [notifications, setNotifications] = useState([]);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+    const fetchNotifications = async () => {
+        if (!session) return;
+        try {
+            const res = await axiosInstance.get('/notification/all');
+            if (res.data?.success) {
+                setNotifications(res.data.data);
+                const unread = res.data.data.filter(n => !n.isRead).length;
+                setUnreadCount(unread);
+            }
+        } catch (err) {
+            console.error("Failed to fetch notifications", err);
+        }
+    };
+
+    useEffect(() => {
+        if (session) {
+            fetchNotifications();
+            const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+            return () => clearInterval(interval);
+        }
+    }, [session]);
 
     if (
         pathname === '/signin' ||
@@ -36,7 +62,8 @@ export default function Header() {
     const navLinks = [
         { name: "Home", href: "/" },
         { name: "Explore Cars", href: "/explore" },
-        { name: "Booking", href: "/booking" },
+        { name: "Favourites", href: "/favourites" },
+        { name: "My Bookings", href: "/my-bookings" },
         { name: "About Us", href: "/about" },
         { name: "Contact Us", href: "/contact" }
     ];
@@ -133,12 +160,17 @@ export default function Header() {
                         {/* Primary Actions (Hidden on tiny screens if crowded, simplified on mobile menu) */}
                         <div className="hidden md:flex items-center gap-3">
                             {/* "Book a Car" / Booking Link Button style */}
-                            <Link to="/booking" className="px-5 py-2.5 text-sm font-bold text-tarmac-600 hover:text-primary-600 border border-transparent hover:border-tarmac-200 rounded-xl transition-all">
-                                Book a Car
-                            </Link>
+                           
+
+                            {/* "List Your Car" Button */}
+                            {(session?.user?.role === 'user' || session?.user?.role === 'owner') && (
+                                <Link to="/submit-car" className="group px-5 py-2.5 bg-white text-primary-600 border border-tarmac-200 rounded-xl font-bold text-sm hover:border-primary-500 transition-all duration-300 flex items-center gap-2 transform hover:-translate-y-0.5">
+                                    <span>List Your Car</span>
+                                </Link>
+                            )}
 
                             {/* "Rent a Car" Primary Button */}
-                            <Link to="/cars" className="group px-5 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-600/20 hover:bg-primary-700 hover:shadow-primary-600/30 transition-all duration-300 flex items-center gap-2 transform hover:-translate-y-0.5">
+                            <Link to="/explore" className="group px-5 py-2.5 bg-primary-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-primary-600/20 hover:bg-primary-700 hover:shadow-primary-600/30 transition-all duration-300 flex items-center gap-2 transform hover:-translate-y-0.5">
                                 <Car size={16} strokeWidth={3} />
                                 <span>Rent a Car</span>
                             </Link>
@@ -157,11 +189,69 @@ export default function Header() {
                                     </Link>
                                 )}
 
-                                <div className="flex items-center gap-3 pl-2">
-                                    <div className="text-right leading-none">
-                                        <p className="text-sm font-bold text-tarmac-900">{session.user.name?.split(' ')[0]}</p>
-                                    </div>
-                                    <button onClick={() => signOut()} className="p-2 text-tarmac-400 hover:text-red-500 rounded-full transition-colors">
+                                <div className="flex items-center gap-3 pl-2 relative">
+                                    <button 
+                                        onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                                        className="p-2 text-tarmac-400 hover:text-primary-600 hover:bg-primary-50 rounded-full transition-colors relative"
+                                    >
+                                        <Bell size={20} />
+                                        {unreadCount > 0 && (
+                                            <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-primary-600 text-white text-[9px] font-bold rounded-full border border-white flex items-center justify-center">
+                                                {unreadCount}
+                                            </span>
+                                        )}
+                                    </button>
+
+                                    {/* Notification Dropdown */}
+                                    {isNotificationsOpen && (
+                                        <div className="absolute right-0 top-12 w-80 bg-white border border-tarmac-100 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200">
+                                            <div className="p-4 border-b border-tarmac-50 flex items-center justify-between bg-tarmac-50/50">
+                                                <h3 className="font-bold text-sm">Notifications</h3>
+                                                <button 
+                                                    onClick={async () => {
+                                                        await axiosInstance.put('/notification/mark-all-read');
+                                                        fetchNotifications();
+                                                    }}
+                                                    className="text-[10px] font-bold text-primary-600 hover:underline"
+                                                >
+                                                    Mark all read
+                                                </button>
+                                            </div>
+                                            <div className="max-h-80 overflow-y-auto">
+                                                {notifications.length === 0 ? (
+                                                    <div className="p-8 text-center text-xs text-tarmac-400 font-medium italic">
+                                                        No notifications
+                                                    </div>
+                                                ) : (
+                                                    notifications.map(notif => (
+                                                        <div 
+                                                            key={notif._id} 
+                                                            onClick={async () => {
+                                                                if(!notif.isRead) {
+                                                                    await axiosInstance.put(`/notification/mark-read/${notif._id}`);
+                                                                    fetchNotifications();
+                                                                }
+                                                            }}
+                                                            className={`p-4 border-b border-tarmac-50 last:border-none hover:bg-tarmac-50 transition-colors cursor-pointer ${!notif.isRead ? 'bg-primary-50/5' : ''}`}
+                                                        >
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <p className={`text-xs font-bold mb-0.5 ${!notif.isRead ? 'text-primary-600' : 'text-tarmac-900'}`}>{notif.title}</p>
+                                                                {!notif.isRead && <span className="w-2 h-2 bg-primary-600 rounded-full mt-1 shrink-0"></span>}
+                                                            </div>
+                                                            <p className="text-[11px] text-tarmac-500 line-clamp-2">{notif.message}</p>
+                                                            <p className="text-[9px] text-tarmac-400 mt-1 font-medium">{new Date(notif.createdAt).toLocaleDateString()}</p>
+                                                        </div>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <Link to="/profile" className="text-right leading-none group ml-1">
+                                        <p className="text-sm font-bold text-tarmac-900 group-hover:text-primary-600 transition-colors">{session.user.name?.split(' ')[0]}</p>
+                                        <p className="text-[10px] text-tarmac-400 group-hover:text-primary-500 font-bold uppercase tracking-wider mt-1">View Profile</p>
+                                    </Link>
+                                    <button onClick={() => signOut()} className="p-2 text-tarmac-400 hover:text-red-500 rounded-full transition-colors ml-1">
                                         <LogOut size={18} />
                                     </button>
                                 </div>
@@ -215,10 +305,15 @@ export default function Header() {
 
                     {/* Mobile Action Buttons */}
                     <div className="grid grid-cols-1 gap-3 mt-2">
-                        <Link to="/booking" className="flex items-center justify-center py-3 rounded-xl border border-tarmac-200 font-bold text-tarmac-700 hover:bg-tarmac-50">
-                            Book a Car
+                        {(session?.user?.role === 'user' || session?.user?.role === 'owner') && (
+                            <Link to="/submit-car" className="flex items-center justify-center py-3 rounded-xl border border-primary-200 font-bold text-primary-600 hover:bg-primary-50">
+                                List Your Car
+                            </Link>
+                        )}
+                        <Link to="/my-bookings" className="flex items-center justify-center py-3 rounded-xl border border-tarmac-200 font-bold text-tarmac-700 hover:bg-tarmac-50">
+                            My Bookings
                         </Link>
-                        <Link to="/cars" className="flex items-center justify-center gap-2 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20">
+                        <Link to="/explore" className="flex items-center justify-center gap-2 py-3 bg-primary-600 text-white rounded-xl font-bold shadow-lg shadow-primary-600/20">
                             <Car size={18} />
                             Rent a Car
                         </Link>

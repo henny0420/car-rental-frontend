@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Search,
     Filter,
@@ -16,11 +17,18 @@ export default function ExploreCars() {
     const [loading, setLoading] = useState(true);
 
     // Filter States
+    const locationState = useLocation();
+    const queryParams = new URLSearchParams(locationState.search);
+
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedType, setSelectedType] = useState('All');
     const [maxPrice, setMaxPrice] = useState(1000);
     const [transmission, setTransmission] = useState('All');
     const [sortBy, setSortBy] = useState('Recommended');
+    const [filterLocation, setFilterLocation] = useState(queryParams.get('location') || '');
+    const [filterPassengers, setFilterPassengers] = useState(queryParams.get('passengers') || '');
+    const [filterStartDate, setFilterStartDate] = useState(queryParams.get('startDate') || '');
+    const [filterEndDate, setFilterEndDate] = useState(queryParams.get('endDate') || '');
 
     useEffect(() => {
         async function fetchCars() {
@@ -40,6 +48,8 @@ export default function ExploreCars() {
                     fuel: c.features?.fuelType || "Petrol",
                     transmission: c.features?.transmission || "Auto",
                     price: c.pricePerHour,
+                    location: c.location,
+                    features: c.features,
                 }));
                 setCars(mappedCars);
             } catch (error) {
@@ -59,8 +69,10 @@ export default function ExploreCars() {
             const matchesType = selectedType === 'All' || car.badge?.toLowerCase() === selectedType.toLowerCase();
             const matchesPrice = car.price <= maxPrice;
             const matchesTrans = transmission === 'All' || car.transmission?.toLowerCase().includes(transmission.toLowerCase());
+            const matchesLocation = !filterLocation || (car.location?.city?.toLowerCase().includes(filterLocation.toLowerCase()));
+            const matchesPassengers = !filterPassengers || (car.features?.seatingCapacity && car.features.seatingCapacity >= Number(filterPassengers));
 
-            return matchesSearch && matchesType && matchesPrice && matchesTrans;
+            return matchesSearch && matchesType && matchesPrice && matchesTrans && matchesLocation && matchesPassengers;
         })
         .sort((a, b) => {
             if (sortBy === 'Price: Low to High') return a.price - b.price;
@@ -112,6 +124,10 @@ export default function ExploreCars() {
                                     setMaxPrice(1000);
                                     setTransmission('All');
                                     setSortBy('Recommended');
+                                    setFilterLocation('');
+                                    setFilterPassengers('');
+                                    setFilterStartDate('');
+                                    setFilterEndDate('');
                                 }}
                                 className="text-xs font-bold text-slate-400 hover:text-primary-500 transition-colors"
                             >
@@ -131,6 +147,31 @@ export default function ExploreCars() {
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm font-medium focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all"
                                 />
                                 <Search size={16} className="absolute left-3.5 top-3.5 text-slate-400" />
+                            </div>
+                        </div>
+
+                        {/* Location & Passengers (From Herobanner) */}
+                        <div className="mb-6 grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Location</label>
+                                <input
+                                    type="text"
+                                    value={filterLocation}
+                                    onChange={(e) => setFilterLocation(e.target.value)}
+                                    placeholder="City..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Seats</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={filterPassengers}
+                                    onChange={(e) => setFilterPassengers(e.target.value)}
+                                    placeholder="Count"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium focus:outline-none focus:border-primary-400 focus:ring-1 focus:ring-primary-400 transition-all"
+                                />
                             </div>
                         </div>
 
@@ -163,8 +204,8 @@ export default function ExploreCars() {
                                 onChange={(e) => setMaxPrice(Number(e.target.value))}
                             />
                             <div className="flex justify-between text-xs font-bold text-slate-500 mt-2">
-                                <span>$50</span>
-                                <span>$1000+</span>
+                                <span>₹50</span>
+                                <span>₹1000+</span>
                             </div>
                         </div>
 

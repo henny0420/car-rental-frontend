@@ -1,23 +1,43 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-    // Mock simple session for testing
-    const [session, setSession] = useState({ user: { name: "System Admin", role: "admin", email: "admin@example.com" } });
+    const [session, setSession] = useState(null);
+    const [status, setStatus] = useState("loading");
 
-    const signIn = (provider, options) => {
-        console.log("Mock signIn", provider, options);
-        return Promise.resolve({ ok: true });
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const role = localStorage.getItem('role');
+        const name = localStorage.getItem('name');
+
+        if (token) {
+            setSession({ user: { name: name || "User", role: role || "user" } });
+            setStatus("authenticated");
+        } else {
+            setSession(null);
+            setStatus("unauthenticated");
+        }
+    }, []);
+
+    const signIn = (userData) => {
+        localStorage.setItem('token', userData.token);
+        localStorage.setItem('role', userData.role);
+        localStorage.setItem('name', userData.name || userData.fullname);
+        setSession({ user: { name: userData.name || userData.fullname, role: userData.role } });
+        setStatus("authenticated");
     }
 
     const signOut = () => {
-        console.log("Mock signOut");
+        localStorage.removeItem('token');
+        localStorage.removeItem('role');
+        localStorage.removeItem('name');
         setSession(null);
+        setStatus("unauthenticated");
     }
 
     return (
-        <AuthContext.Provider value={{ data: session, status: session ? "authenticated" : "unauthenticated", signIn, signOut }}>
+        <AuthContext.Provider value={{ data: session, status, signIn, signOut }}>
             {children}
         </AuthContext.Provider>
     );
@@ -30,7 +50,3 @@ export const useSession = () => {
     }
     return context;
 };
-
-export const signIn = (provider, options) => {
-    console.log("Mock SignIn triggered", provider, options);
-}

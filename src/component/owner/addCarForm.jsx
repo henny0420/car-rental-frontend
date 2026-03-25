@@ -38,6 +38,7 @@ export default function AddCarForm({ brands = [] }) {
         model: '',
         carType: '',
         pricePerHour: '',
+        pricePerDay: '',
         registrationNumber: '',
         isActive: true,
         location: { city: '' },
@@ -102,6 +103,7 @@ export default function AddCarForm({ brands = [] }) {
             formData.name,
             formData.brand,
             formData.pricePerHour,
+            formData.pricePerDay,
             formData.model,
             formData.registrationNumber,
             formData.location.city
@@ -137,6 +139,7 @@ export default function AddCarForm({ brands = [] }) {
         submissionData.append("carType", formData.carType);
         submissionData.append("registrationNumber", formData.registrationNumber);
         submissionData.append("pricePerHour", formData.pricePerHour);
+        submissionData.append("pricePerDay", formData.pricePerDay);
         submissionData.append("city", formData.location.city);
         submissionData.append("color", formData.features.color);
         submissionData.append("transmission", formData.features.transmission);
@@ -151,14 +154,14 @@ export default function AddCarForm({ brands = [] }) {
         submissionData.append("pollutionValidTill", formData.documents.pollutionValidTill);
 
         if (coverFile) {
-            submissionData.append("cover", coverFile);
+            submissionData.append("coverImage", coverFile);
         }
         galleryFiles.forEach((file) => {
-            submissionData.append("gallery", file);
+            submissionData.append("galleryImages", file);
         });
 
         try {
-            const response = await axiosInstance.post('/car/add', submissionData, {
+            const response = await axiosInstance.post('/car/submit-car', submissionData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -409,6 +412,10 @@ export default function AddCarForm({ brands = [] }) {
                                         <label className={labelClass}>Price Per Hour ($) *</label>
                                         <input type="number" name="pricePerHour" value={formData.pricePerHour} onChange={handleChange} className={inputClass} placeholder="0.00" />
                                     </div>
+                                    <div>
+                                        <label className={labelClass}>Price Per Day ($) *</label>
+                                        <input type="number" name="pricePerDay" value={formData.pricePerDay} onChange={handleChange} className={inputClass} placeholder="0.00" />
+                                    </div>
                                     {/* <div className="flex items-end">
                      <label className="w-full flex items-center justify-between p-3.5 bg-tarmac-50 border border-tarmac-200 rounded-xl cursor-pointer hover:border-success/30 transition-all">
                       <span className={`font-bold transition-colors ${formData.isActive ? 'text-success' : 'text-tarmac-400'}`}>
@@ -468,7 +475,8 @@ export default function AddCarForm({ brands = [] }) {
                                         <div className="flex justify-between items-center mb-2">
                                             <span className="text-tarmac-500 font-medium">Rate:</span>
                                             <span className="font-black text-success text-xl"><IndianRupee />{formData.pricePerHour}<span className="text-sm font-bold text-tarmac-400">/hr</span></span>
-                                        </div>
+                                        <span className="font-black text-success text-xl ml-4"><IndianRupee />{formData.pricePerDay}<span className="text-sm font-bold text-tarmac-400">/day</span></span>
+                                    </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-tarmac-500 font-medium">Status:</span>
                                             <span className="px-3 py-1 rounded-full text-xs font-black uppercase tracking-wide bg-yellow-100 text-yellow-700 border border-yellow-200">

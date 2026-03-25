@@ -1,8 +1,24 @@
 import React, { useState } from "react";
 import { Calendar, MapPin, ChevronRight, Search, Star, Shield, Zap } from "lucide-react";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 export default function Herobanner() {
+    const navigate = useNavigate();
+    const [searchLocation, setSearchLocation] = useState("");
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
+    const [passengers, setPassengers] = useState("");
+
+    const handleSearch = (e) => {
+        e.preventDefault();
+        const params = new URLSearchParams();
+        if (searchLocation) params.append('location', searchLocation);
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        if (passengers) params.append('passengers', passengers);
+        navigate(`/explore?${params.toString()}`);
+    };
+
     return (
         <div className="relative bg-tarmac-50 h-[] flex flex-col justify-center overflow-hidden">
 
@@ -56,7 +72,7 @@ export default function Herobanner() {
                         </p>
 
                         <div className="flex flex-col sm:flex-row gap-4 pt-2">
-                            <Link to="/cars" className="group bg-tarmac-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-primary-600 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-tarmac-900/20 hover:shadow-primary-600/30 transform hover:-translate-y-1">
+                            <Link to="/explore" className="group bg-tarmac-900 text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-primary-600 transition-all duration-300 flex items-center justify-center gap-3 shadow-xl shadow-tarmac-900/20 hover:shadow-primary-600/30 transform hover:-translate-y-1">
                                 Browse Fleet
                                 <div className="bg-white/20 rounded-full p-1 group-hover:bg-white/30 transition">
                                     <ChevronRight className="w-4 h-4" />
@@ -123,14 +139,14 @@ export default function Herobanner() {
                 {/* 👇 BOTTOM: SEARCH BAR (Floating) */}
                 <div className=" mt-5 relative z-20">
                     <div className="bg-white shadow-2xl shadow-tarmac-900/10 rounded-3xl p-3 max-w-800 mx-auto border border-tarmac-100 transform hover:-translate-y-1 transition-all duration-300">
-                        <form className="grid grid-cols-1 md:grid-cols-12 gap-2" onSubmit={(e) => e.preventDefault()}>
+                        <form className="grid grid-cols-1 md:grid-cols-12 gap-2" onSubmit={handleSearch}>
 
                             {/* Location */}
                             <div className="md:col-span-2 bg-tarmac-50/50 rounded-2xl px-6 py-4 flex flex-col justify-center transition-colors hover:bg-tarmac-100/50 group cursor-pointer border border-transparent hover:border-tarmac-200">
                                 <label className="text-[10px] font-bold text-tarmac-400 uppercase tracking-widest mb-1 group-hover:text-primary-600 transition-colors">Where</label>
                                 <div className="flex items-center gap-3">
                                     <MapPin className="text-tarmac-400 w-5 h-5 group-hover:text-primary-600 transition-colors" />
-                                    <input type="text" placeholder="City or Address" className="bg-transparent w-full outline-none text-tarmac-900 font-bold placeholder-tarmac-400/70" />
+                                    <input type="text" value={searchLocation} onChange={(e) => setSearchLocation(e.target.value)} placeholder="City or Address" className="bg-transparent w-full outline-none text-tarmac-900 font-bold placeholder-tarmac-400/70" />
                                 </div>
                             </div>
 
@@ -139,7 +155,7 @@ export default function Herobanner() {
                                 <label className="text-[10px] font-bold text-tarmac-400 uppercase tracking-widest mb-1 group-hover:text-primary-600 transition-colors">Start Date</label>
                                 <div className="flex items-center gap-3">
                                     <Calendar className="text-tarmac-400 w-5 h-5 group-hover:text-primary-600 transition-colors" />
-                                    <input type="date" className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
+                                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
                                 </div>
                             </div>
 
@@ -148,7 +164,7 @@ export default function Herobanner() {
                                 <label className="text-[10px] font-bold text-tarmac-400 uppercase tracking-widest mb-1 group-hover:text-primary-600 transition-colors">End Date</label>
                                 <div className="flex items-center gap-3">
                                     <Calendar className="text-tarmac-400 w-5 h-5 group-hover:text-primary-600 transition-colors" />
-                                    <input type="date" className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
+                                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
                                 </div>
                             </div>
                             {/* passenger*/}
@@ -156,7 +172,7 @@ export default function Herobanner() {
                             <div className="md:col-span-2 bg-tarmac-50/50 rounded-2xl px-6 py-4 flex flex-col justify-center transition-colors hover:bg-tarmac-100/50 group cursor-pointer border border-transparent hover:border-tarmac-200">
                                 <label className="text-[10px] font-bold text-tarmac-400 uppercase tracking-widest mb-1 group-hover:text-primary-600 transition-colors">Passenger</label>
                                 <div className="flex items-center gap-3">
-                                    <input type="text" placeholder="seats" className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
+                                    <input type="number" min="1" value={passengers} onChange={(e) => setPassengers(e.target.value)} placeholder="seats" className="bg-transparent w-full outline-none text-tarmac-900 font-bold uppercase text-sm cursor-pointer" />
                                 </div>
                             </div>
 

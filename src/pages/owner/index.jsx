@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import { useSession } from '../../context/AuthContext';
 import { 
   LayoutDashboard, 
   Car, 
@@ -19,6 +21,8 @@ import {
 } from 'lucide-react';
 
 export default function OwnerLayout({ children }) {
+  const { data: session } = useSession();
+  const location = useLocation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -26,12 +30,11 @@ export default function OwnerLayout({ children }) {
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '/owner/dashboard' },
-    { name: 'My Fleet', icon: Car, href: '/owner/cars', },
-    { name: 'Add Vehicle', icon: PlusCircle, href: '/owner/cars/add', active: true },
-    { name: 'Bookings', icon: CalendarCheck, href: '/owner/bookings' },
-    { name: 'Earnings', icon: Wallet, href: '/owner/earnings' },
-    { name: 'Messages', icon: MessageSquare, href: '/owner/messages', badge: 3 },
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/owner/dashboard', active: location.pathname === '/owner/dashboard' || location.pathname === '/owner' },
+    { name: 'My Fleet', icon: Car, href: '/owner/cars', active: location.pathname === '/owner/cars' },
+    { name: 'Add Vehicle', icon: PlusCircle, href: '/owner/cars/add', active: location.pathname === '/owner/cars/add' },
+    { name: 'Bookings', icon: CalendarCheck, href: '/owner/bookings', active: location.pathname === '/owner/bookings' },
+    { name: 'Earnings', icon: Wallet, href: '/owner/earnings', active: location.pathname === '/owner/earnings' },
   ];
 
   return (
@@ -94,21 +97,21 @@ export default function OwnerLayout({ children }) {
              <div className="w-10 h-10 rounded-full bg-tarmac-200 overflow-hidden border-2 border-white shadow-sm shrink-0">
                 <img src="https://i.pravatar.cc/150?img=11" alt="User" className="w-full h-full object-cover" />
              </div>
-             {isSidebarOpen && (
-               <div className="overflow-hidden">
-                 <h4 className="font-bold text-sm truncate text-tarmac-900">John Doe</h4>
-                 <p className="text-xs text-tarmac-500 truncate font-medium">Owner Account</p>
-               </div>
-             )}
+              {isSidebarOpen && (
+                <div className="overflow-hidden">
+                  <h4 className="font-bold text-sm truncate text-tarmac-900">{session?.user?.name || 'Owner'}</h4>
+                  <p className="text-xs text-tarmac-500 truncate font-medium">Owner Account</p>
+                </div>
+              )}
            </div>
         </div>
 
         {/* Navigation Links */}
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar bg-primary-600 rounded-t-[100px] rounded-l-none">
           {navItems.map((item) => (
-            <a 
+            <Link 
               key={item.name} 
-              href={item.href}
+              to={item.href}
                 className={`
                 group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 block mb-1 relative
                 ${item.active 
@@ -134,22 +137,22 @@ export default function OwnerLayout({ children }) {
                   {item.badge}
                 </span>
               )}
-            </a>
+            </Link>
           ))}
         </nav>
 
         {/* Bottom Actions */}
         <div className="p-3 bg-primary-600 border-tarmac-100 space-y-1">
-           <a 
-              href="/owner/settings"
+           <Link 
+              to="/owner/settings"
               className={`
-                group flex items-center gap-3 px-3 py-3 rounded-xl text-tarmac-500 hover:bg-tarmac-50 hover:text-tarmac-900 transition-all block
+                group flex items-center gap-3 px-3 py-3 rounded-xl text-white hover:bg-tarmac-50 hover:text-tarmac-900 transition-all block
                 ${!isSidebarOpen && 'justify-center'}
               `}
             >
               <Settings size={20} className="group-hover:rotate-90 transition-transform duration-500" />
               {isSidebarOpen && <span className="text-sm font-bold">Settings</span>}
-           </a>
+           </Link>
            <button 
               className={`
                 w-full group flex items-center gap-3 px-3 py-3 rounded-xl text-tarmac-500 hover:bg-primary-50 hover:text-primary-700 transition-all

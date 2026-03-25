@@ -1,9 +1,13 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapPin, CalendarCheck, Car, ChevronRight, Heart, Users, Settings2, Gauge, Fuel, ArrowRight, ArrowUpRight } from 'lucide-react';
-
+import { useFavourites } from '../../../context/FavouritesContext';
+import { useSession } from '../../../context/AuthContext';
+import { toast } from 'react-toastify';
 export function CarCard({ car }) {
     const navigate = useNavigate();
+    const { toggleFavourite, isFavourite } = useFavourites();
+    const { status } = useSession();
+    const isFav = isFavourite(car.id || car._id);
 
     return (
         <div className="group bg-white rounded-2xl border border-tarmac-100 overflow-hidden shadow-sm hover:shadow-xl hover:border-tarmac-200 transition-all duration-300 flex flex-col relative">
@@ -19,8 +23,19 @@ export function CarCard({ car }) {
                 )}
 
                 {/* Top Right Wishlist */}
-                <button className="absolute top-3 right-3 z-10 p-2 bg-white/90 backdrop-blur-sm rounded-full text-tarmac-400 hover:text-primary-600 hover:bg-primary-50 transition-all shadow-sm">
-                    <Heart size={16} strokeWidth={2.5} />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (status === 'authenticated') {
+                            toggleFavourite(car);
+                        } else {
+                            toast.info("Please sign in to add to favourites");
+                            navigate('/signin');
+                        }
+                    }}
+                    className={`absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full transition-all shadow-sm ${isFav ? 'bg-primary-600 text-white' : 'bg-white/90 text-tarmac-400 hover:text-primary-600 hover:bg-primary-50'}`}
+                >
+                    <Heart size={16} strokeWidth={2.5} fill={isFav ? "currentColor" : "none"} />
                 </button>
 
                 <img
@@ -62,23 +77,26 @@ export function CarCard({ car }) {
                 {/* Bottom Row: Price & Book Now */}
                 <div className="flex justify-between items-center mt-auto">
                     <div className="flex flex-col">
-                        <span className="text-xl font-black text-tarmac-900">₹{car.price}<span className='text-tarmac-400 font-normal text-sm'>  /per hour</span></span>
+                        <span className="text-xl font-black text-tarmac-900">₹{car.price}<span className='text-tarmac-400 font-normal text-sm'>  /per day</span></span>
                     </div>
 
                     {/* Action Buttons */}
                     <div className="flex gap-2">
-                        <button className="px-4 py-2 bg-primary-600 text-white font-bold text-sm rounded-lg hover:bg-primary-700 shadow-md shadow-primary-600/20 transition-all duration-300">
-                            Book Now
+                        <button
+                            onClick={() => navigate(`/car/${car.id || car._id}`)}
+                            className="px-4 py-2 bg-primary-600 text-white font-bold text-sm rounded-lg hover:bg-primary-700 shadow-md shadow-primary-600/20 transition-all duration-300"
+                        >
+                            Rent Now
                         </button>
                     </div>
                 </div>
                 <div className='flex gap-1 items-center justify-flex-end hover:underline'>
-                    <button onClick={() => navigate(`/car/${car.id}`)}
+                    <button onClick={() => navigate(`/car/${car.id || car._id}`)}
                         className="  block ml-auto mt-2 text-tarmac-700  text-xs rounded-lg  transition-all duration-300"
                     >
                         View Details
                     </button>
-                   <ArrowUpRight size={16} strokeWidth={2} className='mt-2' />
+                    <ArrowUpRight size={16} strokeWidth={2} className='mt-2' />
                 </div>
             </div>
         </div>

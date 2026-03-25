@@ -2,19 +2,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
     MapPin, CalendarCheck, Car as CarIcon,
-    ChevronLeft, Heart, Users, Settings2, Gauge, Fuel, Share2, Info
+    ChevronLeft, Heart, Users, Settings2, Gauge, Fuel, Share2, Info, X, Calendar,
+    CheckCircle2, AlertCircle, ChevronRight
 } from 'lucide-react';
 import axiosInstance from '../../../api/axiosInstance';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { useFavourites } from '../../../context/FavouritesContext';
+import { useSession } from '../../../context/AuthContext';
+import { toast } from 'react-toastify';
 
 export default function SingleCarPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { toggleFavourite, isFavourite } = useFavourites();
+    const { status } = useSession();
     const [car, setCar] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('specs');
+
+    // Booking Modal State
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [bookingData, setBookingData] = useState({
+        bookingDate: '',
+        endingDate: '',
+        couponCode: ''
+    });
+    const [bookingLoading, setBookingLoading] = useState(false);
+    const [bookingMessage, setBookingMessage] = useState({ type: '', text: '' });
     const [nav1, setNav1] = useState(null);
     const [nav2, setNav2] = useState(null);
     const sliderRef1 = useRef(null);
@@ -38,6 +54,33 @@ export default function SingleCarPage() {
         }
         fetchCarDetails();
     }, [id]);
+
+    const handleBooking = async (e) => {
+        e.preventDefault();
+        setBookingLoading(true);
+        setBookingMessage({ type: '', text: '' });
+
+        try {
+            const response = await axiosInstance.post('/booking/book', {
+                carId: car._id || car.id,
+                ...bookingData
+            });
+            setBookingMessage({ type: 'success', text: response.data.message });
+            setTimeout(() => {
+                setIsBookingModalOpen(false);
+                navigate('/my-bookings');
+            }, 2000);
+        } catch (error) {
+            setBookingMessage({
+                type: 'error',
+                text: error.response?.data?.message || "Something went wrong. Please try again."
+            });
+        } finally {
+            setBookingLoading(false);
+        }
+    };
+
+    const isFav = car ? isFavourite(car._id || car.id) : false;
 
     if (loading) return <div className="py-24 text-center text-tarmac-500 font-bold text-xl">Loading car details...</div>;
     if (!car) return <div className="py-24 text-center text-red-500 font-bold text-xl">Car not found.</div>;
@@ -214,17 +257,37 @@ export default function SingleCarPage() {
                         {/* Booking Card */}
                         <div className="bg-white rounded-2xl shadow-lg shadow-tarmac-900/5 border border-primary-100 p-6 sticky top-24">
                             <div className="flex items-end gap-1 mb-6 pb-6 border-b border-tarmac-100">
-                                <span className="text-4xl font-black text-primary-600">₹{car.pricePerHour}</span>
-                                <span className="text-tarmac-400 font-bold mb-1">/ per hour</span>
+                                <span className="text-4xl font-black text-primary-600">₹{car.pricePerDay || car.pricePerHour}</span>
+                                <span className="text-tarmac-400 font-bold mb-1">/ per day</span>
                             </div>
 
                             <div className="flex flex-col gap-3 mb-6">
-                                <button className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-xl shadow-lg shadow-primary-600/20 transition-all transform hover:-translate-y-1">
+                                <button
+                                    onClick={() => {
+                                        if (status === 'authenticated') {
+                                            setIsBookingModalOpen(true);
+                                        } else {
+                                            toast.info("Please sign in to book a car");
+                                            navigate('/signin');
+                                        }
+                                    }}
+                                    className="w-full py-4 bg-primary-600 hover:bg-primary-700 text-white font-black rounded-xl shadow-lg shadow-primary-600/20 transition-all transform hover:-translate-y-1"
+                                >
                                     Book This Car
                                 </button>
                                 <div className="flex gap-3">
-                                    <button className="flex-1 py-3 bg-white border-2 border-tarmac-200 hover:border-primary-500 hover:text-primary-600 text-tarmac-600 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors">
-                                        <Heart size={18} /> Save
+                                    <button
+                                        onClick={() => {
+                                            if (status === 'authenticated') {
+                                                toggleFavourite(car);
+                                            } else {
+                                                toast.info("Please sign in to add to favourites");
+                                                navigate('/signin');
+                                            }
+                                        }}
+                                        className={`flex-1 py-3 border-2 rounded-xl flex items-center justify-center gap-2 transition-colors font-bold ${isFav ? 'bg-primary-50 border-primary-500 text-primary-600' : 'bg-white border-tarmac-200 text-tarmac-600 hover:border-primary-500 hover:text-primary-600'}`}
+                                    >
+                                        <Heart size={18} fill={isFav ? "currentColor" : "none"} /> {isFav ? 'Saved' : 'Save'}
                                     </button>
                                     <button className="flex-1 py-3 bg-white border-2 border-tarmac-200 hover:border-primary-500 hover:text-primary-600 text-tarmac-600 font-bold rounded-xl flex items-center justify-center gap-2 transition-colors">
                                         <Share2 size={18} /> Share
@@ -251,6 +314,96 @@ export default function SingleCarPage() {
 
                 </div>
             </div>
+
+            {/* BOOKING MODAL */}
+            {isBookingModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-tarmac-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-tarmac-50 flex justify-between items-center bg-tarmac-50/50">
+                            <div>
+                                <h3 className="text-xl font-black text-tarmac-900">Book Your Drive</h3>
+                                <p className="text-xs font-bold text-tarmac-400 uppercase tracking-widest">{car.name}</p>
+                            </div>
+                            <button
+                                onClick={() => setIsBookingModalOpen(false)}
+                                className="p-2 hover:bg-white rounded-full text-tarmac-400 hover:text-tarmac-900 transition-colors shadow-sm"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Modal Body */}
+                        <form onSubmit={handleBooking} className="p-8">
+                            <div className="space-y-6">
+                                {/* Date Range */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-tarmac-400 ml-1">Pickup Date</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-tarmac-400" size={16} />
+                                            <input
+                                                type="date"
+                                                required
+                                                min={new Date().toISOString().split('T')[0]}
+                                                className="w-full pl-10 pr-4 py-3 bg-tarmac-50 border border-tarmac-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                                value={bookingData.bookingDate}
+                                                onChange={(e) => setBookingData({ ...bookingData, bookingDate: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-tarmac-400 ml-1">Return Date</label>
+                                        <div className="relative">
+                                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-tarmac-400" size={16} />
+                                            <input
+                                                type="date"
+                                                required
+                                                min={bookingData.bookingDate || new Date().toISOString().split('T')[0]}
+                                                className="w-full pl-10 pr-4 py-3 bg-tarmac-50 border border-tarmac-100 rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                                                value={bookingData.endingDate}
+                                                onChange={(e) => setBookingData({ ...bookingData, endingDate: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Summary */}
+                                <div className="p-4 bg-primary-50 rounded-2xl border border-primary-100">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-sm font-bold text-tarmac-600">Price per day</span>
+                                        <span className="text-sm font-black text-primary-700">₹{car.pricePerDay || car.pricePerHour}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-primary-200/50">
+                                        <span className="text-sm font-black text-tarmac-900">Estimated Total</span>
+                                        <span className="text-lg font-black text-primary-600">Calculated at Checkout</span>
+                                    </div>
+                                </div>
+
+                                {bookingMessage.text && (
+                                    <div className={`p-4 rounded-xl text-sm font-bold flex items-center gap-3 ${bookingMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'}`}>
+                                        {bookingMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                                        {bookingMessage.text}
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={bookingLoading}
+                                    className="w-full py-4 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-black rounded-2xl shadow-xl shadow-primary-600/20 transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+                                >
+                                    {bookingLoading ? (
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    ) : (
+                                        <>Confirm Booking <ChevronRight size={18} /></>
+                                    )}
+                                </button>
+                                <p className="text-[10px] text-center text-tarmac-400 font-bold uppercase tracking-widest">No credit card required to book</p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
